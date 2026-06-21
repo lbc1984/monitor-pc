@@ -12,10 +12,48 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 - PlatformIO, board `esp32-s3-devkitc-1`, Arduino framework
 - Dependencies: LovyanGFX ^1.2.0, NimBLE-Arduino ^1.4.3, ArduinoJson ^7.3.1
 
-### Display (ILI9341)
-- 240×320 portrait, 16-bit RGB565
-- SPI3_HOST: SCLK=12, MOSI=11, MISO=13, DC=46, CS=10, BL=45 (PWM)
-- Dùng 6 sprites để vẽ từng section riêng tránh flicker:
+### Display (ILI9341) — Chi tiết phần cứng
+- **Resolution**: 240 × 320 pixels, 16-bit RGB565 (5-6-5 format)
+- **Controller**: ILI9341 (LovyanGFX `Panel_ILI9341`)
+
+#### SPI Bus
+| Parameter | Value |
+|-----------|-------|
+| Host | SPI3_HOST |
+| Mode | 0 |
+| Write Frequency | 40 MHz |
+| Read Frequency | 16 MHz |
+| DMA Channel | Auto |
+
+#### Pin Mapping
+| Function | GPIO |
+|----------|------|
+| SCLK | 12 |
+| MOSI | 11 |
+| MISO | 13 |
+| DC | 46 |
+| CS | 10 |
+| RST | -1 (disabled) |
+| BL (PWM) | 45 |
+
+#### Panel Flags (verified)
+| Flag | Value | Why |
+|------|-------|-----|
+| `cfg.invert` | `true` | Matches panel polarity, avoids washed colors |
+| `cfg.rgb_order` | `true` | BGR panel order → hex values swapped in code |
+| `cfg.dlen_16bit` | `false` | Prevents white-screen issue |
+
+#### Backlight (PWM)
+- Pin 45, frequency 44.1 kHz, PWM channel 7, active high
+
+#### Color Troubleshooting Notes
+- Keep `cfg.dlen_16bit = false` (changing to `true` causes white-screen)
+- Panel BGR order (`cfg.rgb_order = true`) → hex swapped: RED=0x07E0, GREEN=0xF800
+- **Sprite bắt buộc phải có `setSwapBytes(true)`** sau createSprite() — nguyên nhân chính gây sai màu
+- Không dùng `lcd.setSwapBytes(true)` — tránh double swap
+- If image polarity inverted, toggle `cfg.invert`
+
+#### Dùng 6 sprites để vẽ từng section riêng tránh flicker:
   - `spr_hdr` (240×28) - header
   - `spr_cpu` (240×110) - CPU section
   - `spr_gpu` (240×110) - GPU section
@@ -45,9 +83,11 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 | Network | 272   | 24  | Upload/Download KB/s + WiFi name    |
 | Footer  | 296   | 24  | Đồng hồ (hh:mm:ss từ datetime PC)  |
 
-### Color Palette (RGB565, GRB order!)
+### Color Palette (BGR-aware, cfg.rgb_order = true)
 - C_BG/C_HDR/C_CPU_BG/C_GPU_BG/C_ROW_BG = 0x0000 (black)
-- Màu sắc swap GRB: C_RED=0x07E0 (thực tế là xanh lá), C_GREEN=0xF800, C_BLUE=0x001F
+- Panel BGR order → giá trị hex swapped để đúng tên màu
+- C_RED=0x07E0, C_GREEN=0xF800, C_BLUE=0x001F
+- C_YELLOW=0xFFE0, C_CYAN=0x07FF, C_MAGENTA=0xF81F
 - C_TITLE=0xEFFFu, C_LABEL=0xAD75u, C_DIM=0x6B6Du, C_SEP=0x18C3u
 - barColor(): >=80% đỏ, >=50% vàng, <50% xanh lá
 - tempColor(): >=85°C đỏ, >=70°C vàng, <70°C xanh lá
@@ -113,3 +153,14 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 - Khi thay đổi display geometry: cập nhật constants `LCD_W`, `LCD_H`, các `*_Y`, `*_H`
 - Mọi shared state giữa BLE callback và loop() phải dùng critical section
 - Nếu thêm field mới vào `Stats`: cập nhật struct, BLE parse, draw functions, splash init
+- **Màu sắc**: Panel BGR (`cfg.rgb_order = true`) → hex swapped: RED=0x07E0, GREEN=0xF800
+- **Sprite bắt buộc phải có `setSwapBytes(true)`** sau createSprite() — thiếu cái này màu sẽ sai
+- **Không gọi `lcd.setSwapBytes(true)`** — tránh double swap
+
+---
+
+## Tham khảo
+- **LovyanGFX**: https://github.com/lovyan03/LovyanGFX
+- **LCDWiki Board Page**: https://www.lcdwiki.com/2.8inch_ESP32-S3_Display
+- **ILI9341 Init (LCDWiki)**: https://www.lcdwiki.com/res/ES3C28P/ILI9341V_Init.txt
+- **ESP32-S3 DevKit-C-1**: https://docs.espressif.com/projects/esp-idf/en/stable/esp32s3/hw-reference/en/user_guide-esp32-s3-devkitc-1.html
