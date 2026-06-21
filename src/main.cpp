@@ -17,6 +17,7 @@
 #include <NimBLEDevice.h>
 #include <ArduinoJson.h>
 #include "lgfx.hpp"
+#include <Adafruit_NeoPixel.h>
 
 /* ═══════════════════════════════════════════════════════════
    BLE UUIDs
@@ -24,6 +25,18 @@
 #define SERVICE_UUID "9f1f8f00-1d7d-4b4f-9da8-f2f89d9ef001"
 #define CHAR_UUID    "9f1f8f01-1d7d-4b4f-9da8-f2f89d9ef001"
 #define DEVICE_NAME  "ESP32-Stats-Monitor"
+
+/* ═══════════════════════════════════════════════════════════
+   RGB LED (WS2812 / NeoPixel)
+   ═══════════════════════════════════════════════════════════ */
+#define LED_RGB_PIN    42
+#define NUM_PIXELS     1
+Adafruit_NeoPixel led(NUM_PIXELS, LED_RGB_PIN, NEO_GRB + NEO_KHZ800);
+
+static void setLedColor(uint8_t r, uint8_t g, uint8_t b) {
+    led.setPixelColor(0, led.Color(r, g, b));
+    led.show();
+}
 
 /* ═══════════════════════════════════════════════════════════
    Display geometry
@@ -431,9 +444,11 @@ class StatsCharCallback : public NimBLECharacteristicCallbacks {
 class ServerCallbacks : public NimBLEServerCallbacks {
     void onConnect(NimBLEServer *) override {
         g_ble_connected = true;
+        setLedColor(0, 255, 0);   // xanh lá: BLE connected
     }
     void onDisconnect(NimBLEServer *pSrv) override {
         g_ble_connected = false;
+        setLedColor(255, 0, 0);   // đỏ: BLE disconnected
         pSrv->startAdvertising();
     }
 };
@@ -460,6 +475,11 @@ void setup() {
     spr_ftr.setColorDepth(16);  spr_ftr.createSprite(LCD_W, ROW_H);
 
     drawSplash();
+
+    /* ── RGB LED ── */
+    led.begin();
+    led.setBrightness(50);
+    setLedColor(0, 0, 255);   // xanh dương: chờ BLE connect
 
     /* ── BLE ── */
     NimBLEDevice::init(DEVICE_NAME);

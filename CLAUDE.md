@@ -10,7 +10,7 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 
 ### Platform & Board
 - PlatformIO, board `esp32-s3-devkitc-1`, Arduino framework
-- Dependencies: LovyanGFX ^1.2.0, NimBLE-Arduino ^1.4.3, ArduinoJson ^7.3.1
+- Dependencies: LovyanGFX ^1.2.0, NimBLE-Arduino ^1.4.3, ArduinoJson ^7.3.1, Adafruit NeoPixel ^1.12.3
 
 ### Display (ILI9341) — Chi tiết phần cứng
 - **Resolution**: 240 × 320 pixels, 16-bit RGB565 (5-6-5 format)
@@ -45,6 +45,17 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 
 #### Backlight (PWM)
 - Pin 45, frequency 44.1 kHz, PWM channel 7, active high
+
+#### RGB LED (WS2812 / NeoPixel)
+- **Pin**: GPIO 42
+- **Type**: WS2812 (NeoPixel), 1 LED
+- **Library**: Adafruit NeoPixel
+- **Brightness**: 50 (0-255)
+- **Color mapping**: NEO_GRB (Green-Red-Blue order)
+- **Behavior**:
+  - Xanh dương (0,0,255) — chờ BLE connect (khởi động)
+  - Xanh lá (0,255,0) — BLE connected
+  - Đỏ (255,0,0) — BLE disconnected
 
 #### Color Troubleshooting Notes
 - Keep `cfg.dlen_16bit = false` (changing to `true` causes white-screen)
@@ -100,6 +111,11 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 2. Nếu vừa connect: fill black, vẽ tất cả sections với data hiện tại
 3. Nếu có `g_new_data`: đọc vào local copy, vẽ lại Header/CPU/GPU/RAM/Net
 4. Footer tự refresh mỗi 1 giây (bất kể có data mới hay không)
+
+### RGB LED Control
+- Khởi tạo trong `setup()` sau `drawSplash()`: `led.begin()`, `setBrightness(50)`, màu xanh dương ban đầu
+- `ServerCallbacks::onConnect()` → `setLedColor(0, 255, 0)` (xanh lá)
+- `ServerCallbacks::onDisconnect()` → `setLedColor(255, 0, 0)` (đỏ) + `startAdvertising()`
 
 ---
 
