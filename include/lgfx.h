@@ -1,6 +1,6 @@
 #pragma once
 /**
- * lgfx.hpp – LovyanGFX driver for ILI9341 on ESP32-S3
+ * lgfx.h – LovyanGFX driver for ILI9341 on ESP32-S3
  *
  * Display : 240 × 320, 16-bit RGB565
  * SPI     : SPI3_HOST, 40 MHz write, 16 MHz read

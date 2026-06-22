@@ -6,7 +6,17 @@ Gồm 2 thành phần: firmware ESP32 (C++) và Python sender chạy trên Windo
 
 ---
 
-## FIRMWARE ESP32 (`src/main.cpp` + `include/lgfx.hpp`)
+## FIRMWARE ESP32 (`src/main.cpp` + modules in `include/` and `src/`)
+
+### Firmware module structure
+- `include/config.h`: BLE UUIDs, device name, LED pin, display geometry/layout constants
+- `include/stats.h` + `src/stats.cpp`: `Stats` struct and shared telemetry state
+- `include/colors.h` + `src/colors.cpp`: RGB565 palette and threshold color helpers
+- `include/led_status.h` + `src/led_status.cpp`: WS2812 status LED control
+- `include/display.h` + `src/display.cpp`: LovyanGFX display init and dashboard rendering
+- `include/ble_server.h` + `src/ble_server.cpp`: NimBLE server, callbacks, JSON parsing
+- `include/lgfx.h`: LovyanGFX ILI9341 hardware driver configuration
+- `src/main.cpp`: setup/loop orchestration only
 
 ### Platform & Board
 - PlatformIO, board `esp32-s3-devkitc-1`, Arduino framework
